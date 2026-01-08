@@ -1,6 +1,7 @@
+import { apiFetch } from "../js/api-client.js";
+
 class LoginPage extends HTMLElement {
   connectedCallback() {
-    const API = "http://localhost:3000";
     this.innerHTML = `
       <link rel="stylesheet" href="assets/css/login.css">
       <div class="card" role="dialog" aria-labelledby="login-title">
@@ -78,7 +79,7 @@ class LoginPage extends HTMLElement {
         const fullName = [lastName, name].filter(Boolean).join(" ").trim() || "Зочин хэрэглэгч";
 
         try {
-          const res = await fetch(`${API}/api/auth/login`, {
+          const res = await apiFetch(`/api/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

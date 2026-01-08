@@ -1,4 +1,4 @@
-const API = "http://localhost:3000";
+import { apiFetch } from "../js/api-client.js";
 
 class Couriers extends HTMLElement {
   connectedCallback() {
@@ -12,7 +12,7 @@ class Couriers extends HTMLElement {
       let courier = cached ? JSON.parse(cached) : null;
 
       if (!courier) {
-        const r = await fetch(`${API}/api/courier/me`);
+        const r = await apiFetch(`/api/courier/me`);
         if (!r.ok) throw new Error("courier not found");
         courier = await r.json();
         localStorage.setItem("activeCourier", JSON.stringify(courier));

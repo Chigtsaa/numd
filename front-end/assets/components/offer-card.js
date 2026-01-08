@@ -49,6 +49,7 @@ class OfferCard extends HTMLElement {
             title: this.getAttribute("title"),
             meta: this.getAttribute("meta"),
             price: this.getAttribute("price"),
+            sub: this.getAttribute("sub"),
             // хүсвэл orderId гэх мэт data-* нэмээд дамжуулж болно
             orderId: this.getAttribute("orderid") || this.getAttribute("orderId"),
           },

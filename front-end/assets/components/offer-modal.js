@@ -1,3 +1,5 @@
+import { apiFetch } from "../js/api-client.js";
+
 class OfferModal extends HTMLElement {
   constructor() {
     super();
@@ -11,7 +13,6 @@ class OfferModal extends HTMLElement {
   }
 
   render() {
-    this.API = "http://localhost:3000";
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -317,7 +318,7 @@ class OfferModal extends HTMLElement {
     this.removeOfferFromList(this.currentData);
 
     try {
-      const res = await fetch(`${this.API}/api/courier/me`);
+      const res = await apiFetch(`/api/courier/me`);
       if (res.ok) {
         const courier = await res.json();
         localStorage.setItem('activeCourier', JSON.stringify(courier));
@@ -408,7 +409,7 @@ class OfferModal extends HTMLElement {
 
     if (!courier) {
       try {
-        const res = await fetch(`${this.API}/api/courier/me`);
+        const res = await apiFetch(`/api/courier/me`);
         if (res.ok) {
           courier = await res.json();
           localStorage.setItem('activeCourier', JSON.stringify(courier));

@@ -1,3 +1,5 @@
+import { apiFetch } from "../js/api-client.js";
+
 class HomePage extends HTMLElement {
   connectedCallback() {
     this.pendingOrder = null;
@@ -17,76 +19,6 @@ class HomePage extends HTMLElement {
   render() {
     this.innerHTML = `
       <link rel="stylesheet" href="assets/css/index.css" />
-      <style>
-        #confirm-modal {
-          position: fixed;
-          inset: 0;
-          display: none;
-          align-items: center;
-          justify-content: center;
-          background: rgba(0, 0, 0, 0.4);
-          backdrop-filter: blur(4px);
-          z-index: 10000;
-          padding: 1rem;
-        }
-        #confirm-modal.show { display: flex; }
-        #confirm-modal .modal-content {
-          background: #fff;
-          border-radius: 20px;
-          width: min(480px, 100%);
-          padding: 1.6rem 1.8rem;
-          box-shadow: 0 24px 70px rgba(0,0,0,0.2);
-          display: flex;
-          flex-direction: column;
-          gap: 0.9rem;
-          text-align: center;
-        }
-        #confirm-modal h3 {
-          margin: 0;
-          font-size: 1.3rem;
-          color: #111827;
-        }
-        #confirm-modal p {
-          margin: 0;
-          color: #374151;
-          line-height: 1.45;
-        }
-        #confirm-modal .modal-actions {
-          display: flex;
-          justify-content: space-between;
-          gap: 0.75rem;
-          margin-top: 0.75rem;
-        }
-        #confirm-modal .btn--gray {
-          background: #f9fafb;
-          color: #111827;
-          border: 1px solid #e5e7eb;
-          border-radius: 12px;
-          padding: 0.85rem 1.4rem;
-          font-weight: 700;
-        }
-        #confirm-modal .btn--accent {
-          background: var(--color-accent);
-          color: #fff;
-          border-radius: 12px;
-          padding: 0.85rem 1.4rem;
-          font-weight: 800;
-        }
-        #confirm-modal .detail-row {
-          text-align: left;
-          background: #f9fafb;
-          border-radius: 12px;
-          padding: 0.85rem 1rem;
-          border: 1px solid #eef2f7;
-          color: #1f2937;
-          line-height: 1.5;
-        }
-        #confirm-modal .detail-row strong {
-          display: inline-block;
-          min-width: 4.7rem;
-        }
-      </style>
-
       <section class="filter-section">
         <div class="middle-row">
           <div class="ctrl">
@@ -133,17 +65,7 @@ class HomePage extends HTMLElement {
         </aside>
       </div>
       <offer-modal></offer-modal>
-
-      <div id="confirm-modal" class="modal hidden">
-        <div class="modal-content">
-          <h3>Захиалга баталгаажуулах уу?</h3>
-          <p id="confirm-text"></p>
-          <div class="modal-actions">
-            <button id="cancel-order" class="btn btn--gray">Цуцлах</button>
-            <button id="confirm-order" class="btn btn--accent">Баталгаажуулах</button>
-          </div>
-        </div>
-      </div>
+      <confirm-modal></confirm-modal>
     `;
   }
 
@@ -160,7 +82,7 @@ class HomePage extends HTMLElement {
 
   async syncCustomerInfo(userId) {
     if (!userId) return;
-    const res = await fetch(`${API}/api/customers/${userId}`);
+    const res = await apiFetch(`/api/customers/${userId}`);
     if (!res.ok) return;
     const data = await res.json();
     if (data) {
@@ -205,56 +127,21 @@ class HomePage extends HTMLElement {
   }
 
   setupConfirmModal() {
-    this.confirmModal = this.querySelector("#confirm-modal");
-    this.confirmTextEl = this.querySelector("#confirm-text");
-    this.cancelBtn = this.querySelector("#cancel-order");
-    this.confirmBtn = this.querySelector("#confirm-order");
+    this.confirmModal = this.querySelector("confirm-modal");
+    if (!this.confirmModal) return;
 
-    if (this.cancelBtn) {
-      this.cancelBtn.addEventListener("click", () => this.hideConfirmModal());
-    }
-    if (this.confirmBtn) {
-      this.confirmBtn.addEventListener("click", () => this.confirmOrder());
-    }
-    if (this.confirmModal) {
-      this.confirmModal.addEventListener("click", (e) => {
-        if (e.target === this.confirmModal) this.hideConfirmModal();
-      });
-    }
+    this.confirmModal.addEventListener("confirm", () => this.confirmOrder());
+    this.confirmModal.addEventListener("cancel", () => this.hideConfirmModal());
   }
 
   showConfirmModal(order, summary) {
-    if (!this.confirmModal || !this.confirmTextEl) return;
-
-    const items = summary.items?.length
-      ? summary.items.map((i) => `• ${i.name} — ${i.qty} ширхэг`).join("<br>")
-      : "Бараа сонгогдоогүй";
-
-    const d = new Date(order.createdAt);
-
-    this.confirmTextEl.innerHTML = `
-      <div class="detail-row">
-        <strong>Хаанаас:</strong> ${order.from}<br>
-        <strong>Хаашаа:</strong> ${order.to}<br>
-        <strong>Өдөр:</strong> ${order.createdAt.split("T")[0]}<br>
-        <strong>Цаг:</strong> ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-      <div class="detail-row">
-        <strong>Таны хоол:</strong><br>
-        ${items}
-      </div>
-      <div class="detail-row" style="text-align:center;">
-        <strong>Нийт үнэ:</strong> ${summary.total ? this.formatPrice(summary.total) : "0₮"}
-      </div>
-    `;
-
-    this.confirmModal.classList.remove("hidden");
-    this.confirmModal.classList.add("show");
+    if (!this.confirmModal) return;
+    this.confirmModal.open(order, summary);
   }
 
   hideConfirmModal() {
     if (!this.confirmModal) return;
-    this.confirmModal.classList.remove("show");
+    this.confirmModal.close();
     this.pendingOrder = null;
     this.pendingOffer = null;
   }
@@ -380,7 +267,7 @@ class HomePage extends HTMLElement {
     };
 
     try {
-      const resp = await fetch(`${API}/api/orders`, {
+      const resp = await apiFetch(`/api/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -439,11 +326,9 @@ class HomePage extends HTMLElement {
   }
 }
 
-const API = "http://localhost:3000";
-
 async function loadPlaces() {
-  const from = await fetch(`${API}/api/from-places`).then((r) => r.json());
-  const to = await fetch(`${API}/api/to-places`).then((r) => r.json());
+  const from = await apiFetch(`/api/from-places`).then((r) => r.json());
+  const to = await apiFetch(`/api/to-places`).then((r) => r.json());
 
   const fromSel = document.querySelector("#fromPlace");
   const toSel = document.querySelector("#toPlace");
@@ -470,7 +355,7 @@ document.addEventListener("change", async (e) => {
 
   const placeId = e.target.value;
 
-  const res = await fetch(`${API}/api/menus/${placeId}`).then((r) => r.json());
+  const res = await apiFetch(`/api/menus/${placeId}`).then((r) => r.json());
 
   const whatSel = document.querySelector("#what");
   if (!whatSel) return;

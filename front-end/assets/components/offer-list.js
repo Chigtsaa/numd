@@ -1,53 +1,31 @@
-class OfferCard extends HTMLElement {
-  connectedCallback() {
-    this.innerHTML = `
-      <article class="offer-card">
-        <div class="offer-thumb">
-          <img src="${this.getAttribute('thumb') || 'assets/img/box.svg'}" alt="icon"/>
-        </div>
-        <div class="offer-info">
-          <div class="offer-title">${this.getAttribute('title') || ''}</div>
-          <div class="offer-meta">${this.getAttribute('meta') || ''}</div>
-        </div>
-        <div class="offer-price">${this.getAttribute('price') || ''}</div>
-      </article>
-    `;
-    this.addEventListener('click', () => {
-      const modal = document.querySelector('offer-modal');
-      const subRaw = this.getAttribute('sub');
-      let sub = [];
-        try {
-          sub = JSON.parse(subRaw);  
-        } catch (e) {
-          sub = []; 
-        }
-      modal.show({
-        thumb: this.getAttribute('thumb'),
-        title: this.getAttribute('title'),
-        meta: this.getAttribute('meta'),
-        sub,
-        price: this.getAttribute('price')
-      });
-    });
-  }
-}
-
-customElements.define('offer-card', OfferCard);
+import "./offer-card.js";
 
 class OffersList extends HTMLElement {
+  constructor() {
+    super();
+    this._items = [];
+    this.handleSelect = this.handleSelect.bind(this);
+  }
+
   connectedCallback() {
     this.innerHTML = `
       <section class="offers-container">
         <div class="offers-row"></div>
       </section>
     `;
+    this.addEventListener("offer-select", this.handleSelect);
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener("offer-select", this.handleSelect);
   }
 
   set items(list) {
+    this._items = Array.isArray(list) ? list : [];
     const row = this.querySelector('.offers-row');
     row.innerHTML = '';
     let content = '';
-    list.forEach(item => {
+    this._items.forEach(item => {
       const thumb = item.thumb || 'assets/img/box.svg';
       const title = item.title || '';
       const meta = item.meta || '';
@@ -56,43 +34,44 @@ class OffersList extends HTMLElement {
     });
     row.innerHTML = content;
   }
+
+  handleSelect(event) {
+    const modal = document.querySelector("offer-modal");
+    if (!modal || typeof modal.show !== "function") return;
+
+    const detail = event.detail || {};
+    let sub = [];
+    if (Array.isArray(detail.sub)) {
+      sub = detail.sub;
+    } else if (detail.sub) {
+      try {
+        sub = JSON.parse(detail.sub);
+      } catch (e) {
+        sub = [];
+      }
+    }
+
+    modal.show({
+      thumb: detail.thumb,
+      title: detail.title,
+      meta: detail.meta,
+      sub,
+      price: detail.price,
+    });
+  }
 }
 customElements.define('offers-list', OffersList);
 
 // --- data ---
 document.addEventListener('DOMContentLoaded', () => {
-  const offers = [
-    { thumb: 'assets/img/box.svg', 
-      title: 'GL burger - 7-р байр 207', 
-      meta: '11/21/25 • 14:00', 
-      price: '10,000₮', 
-      sub: [
-      { name: "Бууз", price: "5000₮" },
-      { name: "Сүү", price: "2000₮" },] },
-      { thumb: 'assets/img/document.svg', 
-      title: 'GL burger - 7-р байр 207', 
-      meta: '11/21/25 • 14:00', 
-      price: '10,000₮', 
-      sub: [
-      { name: "Бууз", price: "5000₮" },
-      { name: "Сүү", price: "2000₮" },] },
-      { thumb: 'assets/img/tor.svg', 
-      title: 'GL burger - 7-р байр 207', 
-      meta: '11/21/25 • 14:00', 
-      price: '10,000₮', 
-      sub: [
-      { name: "Бууз", price: "5000₮" },
-      { name: "Сүү", price: "2000₮" },] },
-      { thumb: 'assets/img/tor.svg', 
-      title: 'GL burger - 7-р байр 207', 
-      meta: '11/21/25 • 14:00', 
-      price: '10,000₮', 
-      sub: [
-      { name: "Бууз", price: "5000₮" },
-      { name: "Сүү", price: "2000₮" },] },
-  ];
-
-  localStorage.setItem('offers', JSON.stringify(offers));
+  const stored = localStorage.getItem('offers');
+  if (!stored) return;
+  let offers = [];
+  try {
+    offers = JSON.parse(stored) || [];
+  } catch (e) {
+    offers = [];
+  }
   const offerList = document.querySelector('#offers');
   if (offerList) {
     offerList.items = offers;

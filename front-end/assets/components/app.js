@@ -8,6 +8,7 @@ import './d-orders.js';
 import './del-order-details.js';
 import './del-order-progress.js';
 import './offer-modal.js';
+import './confirm-modal.js';
 import './site-header.js';
 import './order-form.js';
 import './num-router.js';

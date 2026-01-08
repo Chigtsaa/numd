@@ -1,4 +1,4 @@
-const API = "http://localhost:3000";
+import { apiFetch } from "../js/api-client.js";
 
 class OrdersPage extends HTMLElement {
   connectedCallback() {
@@ -27,7 +27,7 @@ class OrdersPage extends HTMLElement {
     }
     if (!courier) {
       try {
-        const res = await fetch(`${API}/api/courier/me`);
+        const res = await apiFetch(`/api/courier/me`);
         if (res.ok) {
           courier = await res.json();
           localStorage.setItem("activeCourier", JSON.stringify(courier));
@@ -111,7 +111,7 @@ class OrdersPage extends HTMLElement {
     const qs = userId ? `?customerId=${encodeURIComponent(userId)}` : "";
 
     try {
-      const res = await fetch(`${API}/api/orders${qs}`);
+      const res = await apiFetch(`/api/orders${qs}`);
       
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || "Алдаа");
